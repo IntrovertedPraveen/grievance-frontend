@@ -1,7 +1,10 @@
-const BASE = `${import.meta.env.VITE_API_URL}/api`;
-// || 'https://render.com/docs/web-services#port-binding'
+const API_URL =
+    import.meta.env.VITE_API_URL;
+if (!API_URL) {
+    throw new Error('VITE_API_URL is not set');
+}
+const BASE = `${API_URL}/api`;
 
-// auth:false -> public endpoint, no token sent, no redirect on 401
 export async function api(path, { method = 'GET', body, auth = true } = {}) {
     const headers = { 'Content-Type': 'application/json' };
     const token = localStorage.getItem('token');
@@ -15,7 +18,7 @@ export async function api(path, { method = 'GET', body, auth = true } = {}) {
             body: body !== undefined ? JSON.stringify(body) : undefined,
         });
     } catch {
-        throw new Error('Cannot reach the server. Check that the backend is running on port 8080.');
+        throw new Error('Cannot reach the server. Please try again in a few seconds.');
     }
 
     if (res.status === 401 && auth) {
@@ -29,8 +32,9 @@ export async function api(path, { method = 'GET', body, auth = true } = {}) {
     try { data = text ? JSON.parse(text) : null; } catch { data = null; }
 
     if (!res.ok) {
-        if (res.status === 403) throw new Error(data ? .message || 'You do not have permission to do that.');
-        throw new Error(data ? .message || `Request failed (${res.status})`);
+        const message = data && data.message;
+        if (res.status === 403) throw new Error(message || 'You do not have permission to do that.');
+        throw new Error(message || `Request failed (${res.status})`);
     }
     return data;
 }
